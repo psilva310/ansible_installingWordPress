@@ -1,0 +1,37 @@
+---
+    - name: 'Install OS dependencies for DatabaseServer'
+      apt:
+        name: ['mysql-server-5.7','python-mysqldb']
+        state: latest
+      become: yes
+    
+    - name: 'Creating MySQL database'
+      mysql_db:
+        name: "{{ wp_db_name }}" #database name
+        login_user: root
+        login_password: Password01#
+        state: present
+      become: yes 
+ 
+    - name: 'Create User in database'
+      mysql_user:
+        name: "{{ wp_username }}"
+        password: "{{ wp_user_password }}"
+        priv: "{{ wp_db_name }}.*:ALL"
+        state: present
+        host: "{{ item }}"
+      become: yes 
+      with_items: #machines that can use the "{{ wp_username }}" user to connect to database
+        - 'localhost'
+        - '127.0.0.1'
+        - "{{ wp_host_ip }}"
+    
+    - name: 'Copying mysql conf file'
+      copy:
+        src: files/mysqld.cnf
+        dest: /etc/mysql/mysql.conf.d/mysqld.cnf
+      become: yes
+      notify:
+        - restart mysql
+
+
